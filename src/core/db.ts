@@ -163,7 +163,7 @@ RETURN c, neighbors, edgesToNeighbors, edgesAmongNeighbors
 
     // language=cypher
     const neo4jBatchQuery = /*cypher*/ `
-MATCH (reporter1: RICEntity { id: $reporter1 }), (reporter2: RICEntity { id: $reporter2 })
+MATCH (reporter1: GPHEntity { name: $reporter1 }), (reporter2: GPHEntity { name: $reporter2 })
 CALL {
   WITH reporter1, reporter2
   MATCH (reporter1)-[r1]-(ric1: RICEntity)-[r2: TRADES]-(ric2: RICEntity)-[r3]-(reporter2)

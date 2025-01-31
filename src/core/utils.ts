@@ -46,10 +46,16 @@ export function prepareGraph(
   const fixedNodeIDs: string[] = [];
 
   graph.forEachNode((id, attributes) => {
-    if (fixedNodesSet.has(attributes.id)) fixedNodeIDs.push(id);
+    let larger = false;
+    if (fixedNodesSet.has(attributes.label) && attributes.dataType === "GPHEntity") {
+      fixedNodeIDs.push(id);
+      larger = true;
+    } else if (!fixedNodes?.length && largerNodesSet.has(attributes.id)) {
+      larger = true;
+    }
     sigmaGraph.addNode(id, {
       ...attributes,
-      size: largerNodesSet.has(attributes.id) ? 40 : 20,
+      size: larger ? 40 : 20,
       color: NODE_TYPES[attributes.dataType].color,
       x: 0,
       y: 0,
@@ -79,8 +85,8 @@ export function prepareGraph(
 
   makeParallelEdgesCurved(sigmaGraph);
 
-  const CIRCULAR_RADIUS = 50;
-  const FIXED_CIRCULAR_RADIUS = 150;
+  const CIRCULAR_RADIUS = 20;
+  const FIXED_CIRCULAR_RADIUS = 50;
   circular.assign(sigmaGraph, { scale: CIRCULAR_RADIUS });
   if (fixedNodeIDs.length) {
     fixedNodeIDs.forEach((node, i) => {
@@ -91,7 +97,7 @@ export function prepareGraph(
     });
   }
   forceAtlas2.assign(sigmaGraph, {
-    settings: forceAtlas2.inferSettings(graph),
+    settings: { ...forceAtlas2.inferSettings(graph), strongGravityMode: true },
     iterations: 200,
   });
 

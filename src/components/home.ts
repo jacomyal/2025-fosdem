@@ -86,7 +86,7 @@ export class RICardoHome extends HTMLView<Props> {
             </section>
             <section>
               <label for="reporter2">Second RIC entity</label>
-              <input type="text" id="reporter2" name="reporter2" value="Italy" disabled />
+              <input type="text" id="reporter2" name="reporter2" value="Algeria (Regency of Algiers)" disabled />
             </section>
           </fieldset>
         </div>
