@@ -8,18 +8,23 @@ import { EdgeArrowProgram, EdgeProgramType } from "sigma/rendering";
 import { DBClient } from "../core/db.ts";
 import { SigmaEdge, SigmaGraph, SigmaNode } from "../core/types.ts";
 import { prepareGraph } from "../core/utils.ts";
+import { HTMLView } from "./html-view.ts";
 
-const OBSERVED_ATTRIBUTES = ["center"] as const;
-type ObservedAttribute = (typeof OBSERVED_ATTRIBUTES)[number];
+type Props = {
+  center: string;
+  minYear?: string;
+  maxYear?: string;
+  nodeTypes?: string | string[];
+  edgeTypes?: string | string[];
+  minTradeValue?: string;
+};
 
-class EgoNetwork extends HTMLElement {
-  static observedAttributes = OBSERVED_ATTRIBUTES;
-
+export class EgoNetwork extends HTMLView<Props> {
   private db: DBClient = new DBClient();
   private sigma: Sigma<SigmaNode, SigmaEdge>;
 
-  constructor() {
-    super();
+  constructor(props: Props) {
+    super(props);
 
     this.innerHTML = `
       <style>
@@ -52,6 +57,7 @@ class EgoNetwork extends HTMLElement {
       // renderEdgeLabels: true,
       zIndex: true,
       defaultEdgeType: "straight",
+      allowInvalidContainer: true,
       edgeProgramClasses: {
         straight: EdgeArrowProgram,
         curved: EdgeCurvedArrowProgram,
@@ -59,15 +65,8 @@ class EgoNetwork extends HTMLElement {
     });
   }
 
-  /**
-   * Web component lifecycle:
-   * ************************
-   */
-  attributeChangedCallback(name: ObservedAttribute) {
-    switch (name) {
-      case "center":
-        this.reloadGraph();
-    }
+  init() {
+    this.reloadGraph();
   }
 
   /**
@@ -88,15 +87,29 @@ class EgoNetwork extends HTMLElement {
 
   /**
    * DB lifecycle
+   * ************
    */
   private async reloadGraph() {
-    const center = this.getAttribute("center");
+    const {
+      center,
+      minYear: rawMinYear,
+      maxYear: rawMaxYear,
+      minTradeValue: rawMinTradeValue,
+      nodeTypes,
+      edgeTypes,
+    } = this.props;
+    const minYear = rawMinYear ? parseInt(rawMinYear) : undefined;
+    const maxYear = rawMaxYear ? parseInt(rawMaxYear) : undefined;
+    const minTradeValue = rawMinTradeValue ? parseInt(rawMinTradeValue) : undefined;
     if (!center) return;
 
     this.toggleLoading(true);
     const dataGraph = await this.db.getEgoNetwork(center, {
-      minYear: 1860,
-      maxYear: 1865,
+      minYear,
+      maxYear,
+      minTradeValue,
+      nodeTypes: Array.isArray(nodeTypes) ? nodeTypes : nodeTypes ? [nodeTypes] : [],
+      edgeTypes: Array.isArray(edgeTypes) ? edgeTypes : edgeTypes ? [edgeTypes] : [],
     });
     const graph = prepareGraph(dataGraph, { center });
     circular.assign(graph, { scale: 100 });

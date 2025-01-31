@@ -2,7 +2,7 @@ import { MultiGraph } from "graphology";
 import { Driver, auth, driver } from "neo4j-driver";
 
 import { CONFIG } from "../config.ts";
-import { DataEdge, DataGraph, EdgeType, Filter, NodeType } from "./types.ts";
+import { DataEdge, DataGraph, EDGE_TYPES_SET, EdgeType, Filter, NODE_TYPES_SET, NodeType } from "./types.ts";
 
 interface Neo4JNode<T extends NodeType = NodeType> {
   elementId: string;
@@ -43,7 +43,7 @@ CALL {
     /* TRADE edges must be within year range */
     AND (
       type(r1) <> 'TRADES' OR (
-        r1.year >= $minYear AND r1.year <= $maxYear
+        r1.year >= $minYear AND r1.year <= $maxYear AND r1.value >= $minTradeValue
       )
     )
   RETURN collect(DISTINCT n) AS neighbors,
@@ -66,7 +66,7 @@ CALL {
     )
     AND (
       type(r2) <> 'TRADES' OR (
-        r2.year >= $minYear AND r2.year <= $maxYear
+        r2.year >= $minYear AND r2.year <= $maxYear AND r2.value >= $minTradeValue
       )
     )
   RETURN collect(DISTINCT r2) AS edgesAmongNeighbors
@@ -82,16 +82,20 @@ export class DBClient {
     this.driver = driver(CONFIG.neo4j.uri, auth.basic(CONFIG.neo4j.user, CONFIG.neo4j.password));
   }
 
-  async getEgoNetwork(centerNode: string, { nodeTypes, edgeTypes, minYear, maxYear }: Filter = {}): Promise<DataGraph> {
+  async getEgoNetwork(
+    centerNode: string,
+    { nodeTypes, edgeTypes, minYear, maxYear, minTradeValue }: Filter = {},
+  ): Promise<DataGraph> {
     const session = this.driver.session();
 
     // Run the multi-part query
     const result = await session.run(neo4jBatchQuery, {
       centerNode,
-      nodeTypes: nodeTypes ? Array.from(nodeTypes) : [],
-      edgeTypes: edgeTypes ? Array.from(edgeTypes) : [],
-      minYear: minYear ?? Number.MIN_SAFE_INTEGER, // or some default
-      maxYear: maxYear ?? Number.MAX_SAFE_INTEGER, // or some default
+      nodeTypes: nodeTypes ? nodeTypes.filter((t) => NODE_TYPES_SET.has(t)) : [],
+      edgeTypes: edgeTypes ? edgeTypes.filter((t) => EDGE_TYPES_SET.has(t)) : [],
+      minYear: minYear ?? Number.MIN_SAFE_INTEGER,
+      maxYear: maxYear ?? Number.MAX_SAFE_INTEGER,
+      minTradeValue: minTradeValue ?? 0,
     });
 
     await session.close();

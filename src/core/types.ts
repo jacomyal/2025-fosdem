@@ -15,6 +15,7 @@ export const NODE_TYPES = {
     color: "#EDA4ED",
   },
 } as const;
+export const NODE_TYPES_SET = new Set<string>(Object.keys(NODE_TYPES));
 export type NodeType = keyof typeof NODE_TYPES;
 
 export const EDGE_TYPES = {
@@ -49,13 +50,15 @@ export const EDGE_TYPES = {
     zIndex: 0,
   },
 } as const;
+export const EDGE_TYPES_SET = new Set<string>(Object.keys(EDGE_TYPES));
 export type EdgeType = keyof typeof EDGE_TYPES;
 
 export interface Filter {
   minYear?: number;
   maxYear?: number;
-  nodeTypes?: Set<NodeType>;
-  edgeTypes?: Set<EdgeType>;
+  minTradeValue?: number;
+  nodeTypes?: string[];
+  edgeTypes?: string[];
 }
 
 export type DataNode = { dataType: NodeType; label: string; id: string };
@@ -72,3 +75,5 @@ export type SigmaEdge = DataEdge &
     parallelMaxIndex?: number;
   };
 export type SigmaGraph = MultiGraph<SigmaNode, SigmaEdge>;
+
+export type BaseProps = Record<string, string | string[]>;
