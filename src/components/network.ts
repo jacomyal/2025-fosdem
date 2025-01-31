@@ -1,26 +1,32 @@
 import { EdgeCurvedArrowProgram } from "@sigma/edge-curve";
 import { MultiGraph } from "graphology";
-import { circular } from "graphology-layout";
-import forceAtlas2 from "graphology-layout-forceatlas2";
 import Sigma from "sigma";
 import { EdgeArrowProgram, EdgeProgramType } from "sigma/rendering";
 
 import { DBClient } from "../core/db.ts";
 import { openView } from "../core/routing.ts";
-import { EDGE_TYPES, EdgeType, NODE_TYPES, NodeType, SigmaEdge, SigmaGraph, SigmaNode } from "../core/types.ts";
+import {
+  DataGraph,
+  EDGE_TYPES,
+  EdgeType,
+  NODE_TYPES,
+  NodeType,
+  SigmaEdge,
+  SigmaGraph,
+  SigmaNode,
+} from "../core/types.ts";
 import { prepareGraph } from "../core/utils.ts";
 import { HTMLView } from "./html-view.ts";
 
 type Props = {
-  center: string;
   minYear?: string;
   maxYear?: string;
   nodeTypes?: string | string[];
   edgeTypes?: string | string[];
   minTradeValue?: string;
-};
+} & ({ mode: "ego"; center: string } | { mode: "relations"; reporter1: string; reporter2: string });
 
-export class EgoNetwork extends HTMLView<Props> {
+export class Network extends HTMLView<Props> {
   private db: DBClient = new DBClient();
   private sigma: Sigma<SigmaNode, SigmaEdge>;
 
@@ -45,7 +51,7 @@ export class EgoNetwork extends HTMLView<Props> {
 
     this.innerHTML = `
       <style>
-        .ego-network-component {
+        .network-component {
           position: relative;
           width: 100%;
           height: 100%;
@@ -81,7 +87,7 @@ export class EgoNetwork extends HTMLView<Props> {
           line-height: 2em;
         }
       </style>
-      <section class="ego-network-component">
+      <section class="network-component">
         <div class="sigma-root"></div>
         <div class="loader hidden"><span>Loading...</span></div>
         <fieldset class="caption">
@@ -130,6 +136,7 @@ export class EgoNetwork extends HTMLView<Props> {
       zIndex: true,
       defaultEdgeType: "straight",
       allowInvalidContainer: true,
+      labelFont: "monospace",
       edgeProgramClasses: {
         straight: EdgeArrowProgram,
         curved: EdgeCurvedArrowProgram,
@@ -176,7 +183,7 @@ export class EgoNetwork extends HTMLView<Props> {
    */
   private async reloadGraph() {
     const {
-      center,
+      mode,
       minYear: rawMinYear,
       maxYear: rawMaxYear,
       minTradeValue: rawMinTradeValue,
@@ -186,22 +193,39 @@ export class EgoNetwork extends HTMLView<Props> {
     const minYear = rawMinYear ? parseInt(rawMinYear) : undefined;
     const maxYear = rawMaxYear ? parseInt(rawMaxYear) : undefined;
     const minTradeValue = rawMinTradeValue ? parseInt(rawMinTradeValue) : undefined;
-    if (!center) return;
 
+    let dataGraph: DataGraph;
+    let largerNodes: string[] = [];
+    let fixedNodes: string[] = [];
     this.toggleLoading(true);
-    const dataGraph = await this.db.getEgoNetwork(center, {
-      minYear,
-      maxYear,
-      minTradeValue,
-      nodeTypes: Array.isArray(nodeTypes) ? nodeTypes : nodeTypes ? [nodeTypes] : [],
-      edgeTypes: Array.isArray(edgeTypes) ? edgeTypes : edgeTypes ? [edgeTypes] : [],
-    });
-    const graph = prepareGraph(dataGraph, { center });
-    circular.assign(graph, { scale: 100 });
-    forceAtlas2.assign(graph, {
-      settings: forceAtlas2.inferSettings(graph),
-      iterations: 200,
-    });
+    switch (mode) {
+      case "ego": {
+        const center = this.props.center;
+        largerNodes = [center];
+        dataGraph = await this.db.getEgoNetwork(center, {
+          minYear,
+          maxYear,
+          minTradeValue,
+          nodeTypes: Array.isArray(nodeTypes) ? nodeTypes : nodeTypes ? [nodeTypes] : [],
+          edgeTypes: Array.isArray(edgeTypes) ? edgeTypes : edgeTypes ? [edgeTypes] : [],
+        });
+        break;
+      }
+      case "relations": {
+        const { reporter1, reporter2 } = this.props;
+        largerNodes = [reporter1, reporter2];
+        fixedNodes = [reporter1, reporter2];
+        dataGraph = await this.db.getRelationsGraph(reporter1, reporter2, {
+          minYear,
+          maxYear,
+          minTradeValue,
+          nodeTypes: Array.isArray(nodeTypes) ? nodeTypes : nodeTypes ? [nodeTypes] : [],
+          edgeTypes: Array.isArray(edgeTypes) ? edgeTypes : edgeTypes ? [edgeTypes] : [],
+        });
+        break;
+      }
+    }
+    const graph = prepareGraph(dataGraph, { largerNodes, fixedNodes });
     this.sigma.setGraph(graph);
     this.sigma.refresh();
 
@@ -209,4 +233,4 @@ export class EgoNetwork extends HTMLView<Props> {
   }
 }
 
-customElements.define("ego-network", EgoNetwork);
+customElements.define("ricardo-network", Network);

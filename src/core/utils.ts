@@ -1,5 +1,7 @@
 import { DEFAULT_EDGE_CURVATURE, indexParallelEdgesIndex } from "@sigma/edge-curve";
 import { MultiGraph } from "graphology";
+import { circular } from "graphology-layout";
+import forceAtlas2 from "graphology-layout-forceatlas2";
 
 import { DataGraph, EDGE_TYPES, NODE_TYPES, SigmaGraph } from "./types.ts";
 
@@ -34,24 +36,29 @@ export function makeParallelEdgesCurved(sigmaGraph: SigmaGraph): void {
   });
 }
 
-export function prepareGraph(graph: DataGraph, { center }: { center?: string } = {}): SigmaGraph {
+export function prepareGraph(
+  graph: DataGraph,
+  { largerNodes, fixedNodes }: { largerNodes?: string[]; fixedNodes?: string[] } = {},
+): SigmaGraph {
   const sigmaGraph = new MultiGraph() as SigmaGraph;
+  const largerNodesSet = new Set(largerNodes || []);
+  const fixedNodesSet = new Set(fixedNodes || []);
+  const fixedNodeIDs: string[] = [];
 
-  graph.forEachNode((id, attributes) =>
+  graph.forEachNode((id, attributes) => {
+    if (fixedNodesSet.has(attributes.id)) fixedNodeIDs.push(id);
     sigmaGraph.addNode(id, {
       ...attributes,
-      size: attributes.id === center ? 40 : 20,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
+      size: largerNodesSet.has(attributes.id) ? 40 : 20,
       color: NODE_TYPES[attributes.dataType].color,
-    }),
-  );
+      x: 0,
+      y: 0,
+    });
+  });
 
-  let tradeMin = Infinity;
   let tradeMax = -Infinity;
   graph.forEachEdge((_, attributes) => {
     if (attributes.dataType === "TRADES") {
-      tradeMin = Math.min(tradeMin, attributes.value);
       tradeMax = Math.max(tradeMax, attributes.value);
     }
   });
@@ -60,7 +67,7 @@ export function prepareGraph(graph: DataGraph, { center }: { center?: string } =
     sigmaGraph.addEdgeWithKey(id, source, target, {
       ...attributes,
       type: "straight",
-      size: attributes.dataType === "TRADES" ? ((5 * (attributes.value - tradeMin)) / (tradeMax - tradeMin)) * 15 : 3,
+      size: attributes.dataType === "TRADES" ? (attributes.value / tradeMax) * 40 : 1,
       color: EDGE_TYPES[attributes.dataType].color,
       zIndex: EDGE_TYPES[attributes.dataType].zIndex,
       label:
@@ -71,6 +78,22 @@ export function prepareGraph(graph: DataGraph, { center }: { center?: string } =
   );
 
   makeParallelEdgesCurved(sigmaGraph);
+
+  const CIRCULAR_RADIUS = 50;
+  const FIXED_CIRCULAR_RADIUS = 150;
+  circular.assign(sigmaGraph, { scale: CIRCULAR_RADIUS });
+  if (fixedNodeIDs.length) {
+    fixedNodeIDs.forEach((node, i) => {
+      const angle = (i / fixedNodeIDs.length) * 2 * Math.PI;
+      const x = FIXED_CIRCULAR_RADIUS * Math.cos(angle);
+      const y = FIXED_CIRCULAR_RADIUS * Math.sin(angle);
+      sigmaGraph.mergeNodeAttributes(node, { x, y, fixed: true });
+    });
+  }
+  forceAtlas2.assign(sigmaGraph, {
+    settings: forceAtlas2.inferSettings(graph),
+    iterations: 200,
+  });
 
   return sigmaGraph;
 }

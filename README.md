@@ -1,8 +1,10 @@
 # FOSDEM 2025 - Sigma.js demo
 
-This repository contains a TypeScript web application to demo [sigma.js](https://sigmajs.org) on exploring the [RICardo](https://ricardo.medialab.sciences-po.fr/) datasets.
+This repository contains a TypeScript web application to demo [sigma.js](https://sigmajs.org) on exploring the [RICardo](https://ricardo.medialab.sciences-po.fr/) datasets. This demo has been developed to illustrate my presentation at [FOSDEM 2025](https://fosdem.org/2025/) [Data Analytics Devroom](https://fosdem.org/2025/schedule/track/analytics/), [_Developing Custom UIs to Explore Graph Databases Using Sigma.js_](https://fosdem.org/2025/schedule/event/fosdem-2025-5614-developing-custom-uis-to-explore-graph-databases-using-sigma-js/).
 
-To run this project locally, you need:
+The web application is very light, and simply provides two different views on the dataset. It's built with Vite and TypeScript, and using web components.
+
+There is no public instance, since I don't want to maintain some Neo4J server. But you can run this project locally. For this, you need:
 
 - A clean and recent [Node](https://nodejs.org/en) + [NPM](https://npmjs.com/) environment
 - A clean [Docker](https://hub.docker.com/_/neo4j) installation, or some [Neo4J](https://neo4j.com/) instance

@@ -1,13 +1,13 @@
 import { map } from "lodash-es";
 
-import { EgoNetwork } from "../components/ego-network.ts";
 import { RICardoHome } from "../components/home.ts";
 import { HTMLViewType } from "../components/html-view.ts";
+import { Network } from "../components/network.ts";
 import { BaseProps } from "./types.ts";
 
 const VIEWS = {
   "/": RICardoHome,
-  "/ego-network": EgoNetwork,
+  "/network": Network,
 } as const;
 
 const ROUTES = Object.keys(VIEWS);
