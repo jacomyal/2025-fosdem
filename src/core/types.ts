@@ -21,32 +21,32 @@ export type NodeType = keyof typeof NODE_TYPES;
 export const EDGE_TYPES = {
   TRADES: {
     label: "exports",
-    color: "#333333",
+    color: "#749AF2",
     zIndex: 1,
   },
   IS_IN_CONTINENT: {
     label: "is in",
-    color: "#cccccc",
+    color: "#74C2F2",
     zIndex: 0,
   },
   IS_EQUIVALENT_TO: {
     label: "is equivalent to",
-    color: "#cccccc",
+    color: "#74EAF2",
     zIndex: 0,
   },
   IS_CHILD_OF: {
     label: "is child of",
-    color: "#cccccc",
+    color: "#74F2A6",
     zIndex: 0,
   },
   IS_COLONIAL_PART_OF: {
     label: "is colonial part of",
-    color: "#cccccc",
+    color: "#74F2D0",
     zIndex: 0,
   },
   IS_PART_OF: {
     label: "is part of",
-    color: "#cccccc",
+    color: "#CBF1F4",
     zIndex: 0,
   },
 } as const;

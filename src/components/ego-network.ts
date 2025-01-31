@@ -6,7 +6,8 @@ import Sigma from "sigma";
 import { EdgeArrowProgram, EdgeProgramType } from "sigma/rendering";
 
 import { DBClient } from "../core/db.ts";
-import { SigmaEdge, SigmaGraph, SigmaNode } from "../core/types.ts";
+import { openView } from "../core/routing.ts";
+import { EDGE_TYPES, EdgeType, NODE_TYPES, NodeType, SigmaEdge, SigmaGraph, SigmaNode } from "../core/types.ts";
 import { prepareGraph } from "../core/utils.ts";
 import { HTMLView } from "./html-view.ts";
 
@@ -25,6 +26,22 @@ export class EgoNetwork extends HTMLView<Props> {
 
   constructor(props: Props) {
     super(props);
+
+    const { nodeTypes, edgeTypes } = this.props;
+    const filteredNodeTypes = (
+      Array.isArray(nodeTypes) && nodeTypes.length
+        ? nodeTypes
+        : typeof nodeTypes === "string"
+          ? [nodeTypes]
+          : Object.keys(NODE_TYPES)
+    ) as NodeType[];
+    const filteredEdgeTypes = (
+      Array.isArray(edgeTypes) && edgeTypes.length
+        ? edgeTypes
+        : typeof edgeTypes === "string"
+          ? [edgeTypes]
+          : Object.keys(EDGE_TYPES)
+    ) as EdgeType[];
 
     this.innerHTML = `
       <style>
@@ -46,10 +63,65 @@ export class EgoNetwork extends HTMLView<Props> {
           align-items: center;
           justify-content: center;
         }
+        .caption {
+          background: white;
+          position: absolute;
+          max-width: 200px;
+          bottom: 10px;
+          right: 10px;
+        }
+        .controls {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-around;
+          margin-bottom: 0.5em;
+        }
+        .controls button {
+          height: 2em;
+          line-height: 2em;
+        }
       </style>
       <section class="ego-network-component">
         <div class="sigma-root"></div>
         <div class="loader hidden"><span>Loading...</span></div>
+        <fieldset class="caption">
+          <legend><strong>How to read the graph</strong></legend>
+          
+          <div>Nodes</div>
+          ${filteredNodeTypes
+            .map(
+              (nodeType) => `
+          <div>
+            <small>
+              <span class="circle" style="background:${NODE_TYPES[nodeType].color};"></span> ${NODE_TYPES[nodeType].label}
+            </small>
+          </div>
+          `,
+            )
+            .join("")}
+          
+          <br>
+          <div>Edges</div>
+          ${filteredEdgeTypes
+            .map(
+              (edgeType) => `
+          <div>
+            <small>
+              <span class="slash" style="background:${EDGE_TYPES[edgeType].color};"></span> ${EDGE_TYPES[edgeType].label}
+            </small>
+          </div>
+          `,
+            )
+            .join("")}
+          
+          <br>
+          <div class="controls">
+            <button id="zoom-out">🔍-</button>
+            <button id="zoom-reset">🞊</button>
+            <button id="zoom-in">🔍+</button>
+            <button id="back-to-home">🏠</button>
+          </div>
+        </fieldset>
       </section>
     `;
 
@@ -67,6 +139,19 @@ export class EgoNetwork extends HTMLView<Props> {
 
   init() {
     this.reloadGraph();
+
+    this.querySelector("button#back-to-home")?.addEventListener("click", () => {
+      openView("/", {});
+    });
+    this.querySelector("button#zoom-in")?.addEventListener("click", () => {
+      this.sigma.getCamera().animatedZoom();
+    });
+    this.querySelector("button#zoom-out")?.addEventListener("click", () => {
+      this.sigma.getCamera().animatedUnzoom();
+    });
+    this.querySelector("button#zoom-reset")?.addEventListener("click", () => {
+      this.sigma.getCamera().animatedReset();
+    });
   }
 
   /**

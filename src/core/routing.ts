@@ -28,7 +28,7 @@ function readURLSearchParams(params: URLSearchParams): BaseProps {
 function writeURLSearchParams(props: BaseProps): string {
   return map(props, (value, key) =>
     Array.isArray(value)
-      ? value.map((v) => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`)
+      ? value.map((v) => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`).join("&")
       : `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
   ).join("&");
 }
