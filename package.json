@@ -12,7 +12,7 @@
     "docker:start": "docker run -d --publish=7474:7474 --publish=7687:7687 --volume=./data/neo4j:/data --env-file ./env.list --name ricardo-neo4j neo4j",
     "docker:stop": "docker stop ricardo-neo4j",
     "docker:clean": "npm run docker:stop && docker rm ricardo-neo4j && rimraf data/neo4j",
-    "data:prepare": "ts-node bin/index.ts"
+    "data:prepare": "tsx bin/index.ts"
   },
   "dependencies": {
     "@sigma/edge-curve": "^3.1.0",
@@ -34,7 +34,7 @@
     "globals": "^15.14.0",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.18.2",
     "vite": "^6.0.5"
