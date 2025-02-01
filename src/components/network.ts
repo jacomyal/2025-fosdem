@@ -223,18 +223,26 @@ export class Network extends HTMLView<Props> {
       case "ego": {
         const { center, includeCenter } = this.props;
         largerNodes = [center];
+        const edgeTypesArray: string[] = Array.isArray(edgeTypes) ? edgeTypes : edgeTypes ? [edgeTypes] : [];
         dataGraph = await this.db.getEgoNetwork(center, {
           minYear,
           maxYear,
           minTradeValue,
-          edgeTypes: Array.isArray(edgeTypes) ? edgeTypes : edgeTypes ? [edgeTypes] : [],
+          edgeTypes: edgeTypesArray,
         });
         if (includeCenter !== "on" && includeCenter !== "true") {
           const centerID = dataGraph.findNode((_, attributes) => attributes.label === center);
           if (centerID) dataGraph.dropNode(centerID);
         }
         this.setTitle(
-          `Network of trading partners and geopolitical relationships around <strong>${center}</strong>${getYearsCaption(minYear, maxYear)}`,
+          `Network of ${
+            [
+              !edgeTypesArray.length || (edgeTypesArray.includes("TRADES") && "trading partners"),
+              (!edgeTypesArray.length || edgeTypesArray.length > 1) && "geopolitical relationships",
+            ]
+              .filter((s) => !!s)
+              .join(" and ") || "relationships"
+          } around <strong>${center}</strong>${getYearsCaption(minYear, maxYear)}`,
         );
         break;
       }
