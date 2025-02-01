@@ -28,6 +28,18 @@ type Props = {
   | { mode: "relations"; reporter1: string; reporter2: string; includeDirectTrades: string }
 );
 
+function getYearsCaption(min?: number, max?: number): string {
+  if (typeof min === "number" && typeof max === "number") {
+    return ` between ${min} and ${max}`;
+  } else if (typeof min === "number") {
+    return ` after ${min}`;
+  } else if (typeof max === "number") {
+    return ` before ${max}`;
+  }
+
+  return "";
+}
+
 export class Network extends HTMLView<Props> {
   private db: DBClient = new DBClient();
   private sigma: Sigma<SigmaNode, SigmaEdge>;
@@ -87,6 +99,10 @@ export class Network extends HTMLView<Props> {
         <div class="loader hidden"><span>Loading...</span></div>
         <fieldset class="caption">
           <legend><strong>How to read the graph</strong></legend>
+
+          <div id="title"></div>
+          
+          <br>
           
           <div>Nodes</div>
           ${Object.keys(NODE_TYPES)
@@ -166,10 +182,16 @@ export class Network extends HTMLView<Props> {
   private getLoader() {
     return this.querySelector(".loader") as HTMLDivElement;
   }
+  private getTitleElement() {
+    return this.querySelector("#title") as HTMLDivElement;
+  }
   private toggleLoading(isLoading?: boolean) {
     if (isLoading === undefined) this.getLoader().classList.toggle("hidden");
     else if (isLoading) this.getLoader().classList.remove("hidden");
     else this.getLoader().classList.add("hidden");
+  }
+  private setTitle(title: string) {
+    this.getTitleElement().innerHTML = title;
   }
 
   /**
@@ -200,10 +222,14 @@ export class Network extends HTMLView<Props> {
           const centerID = dataGraph.findNode((_, attributes) => attributes.label === center);
           if (centerID) dataGraph.dropNode(centerID);
         }
+        this.setTitle(
+          `Network of trading partners and geopolitical relationships around <strong>${center}</strong>${getYearsCaption(minYear, maxYear)}`,
+        );
         break;
       }
       case "relations": {
         const { reporter1, reporter2, includeDirectTrades } = this.props;
+        const getDirectTrades = includeDirectTrades === "on" || includeDirectTrades === "true";
         largerNodes = [reporter1, reporter2];
         fixedNodes = [reporter1, reporter2];
         dataGraph = await this.db.getRelationsGraph(reporter1, reporter2, {
@@ -211,8 +237,11 @@ export class Network extends HTMLView<Props> {
           maxYear,
           minTradeValue,
           edgeTypes: Array.isArray(edgeTypes) ? edgeTypes : edgeTypes ? [edgeTypes] : [],
-          getDirectTrades: includeDirectTrades === "on" || includeDirectTrades === "true",
+          getDirectTrades,
         });
+        this.setTitle(
+          `Network of ${getDirectTrades ? "direct and " : ""}indirect trades between <strong>${reporter1}</strong> and <strong>${reporter2}</strong>${getYearsCaption(minYear, maxYear)}`,
+        );
         break;
       }
     }

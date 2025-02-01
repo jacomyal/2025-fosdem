@@ -84,7 +84,7 @@ export function prepareGraph(
   circular.assign(sigmaGraph, { scale: CIRCULAR_RADIUS });
   if (fixedNodeIDs.length) {
     fixedNodeIDs.forEach((node, i) => {
-      const angle = (i / fixedNodeIDs.length) * 2 * Math.PI;
+      const angle = (i / fixedNodeIDs.length) * 2 * Math.PI + Math.PI * 0.6;
       const x = FIXED_CIRCULAR_RADIUS * Math.cos(angle);
       const y = FIXED_CIRCULAR_RADIUS * Math.sin(angle);
       sigmaGraph.mergeNodeAttributes(node, { x, y, fixed: true });
