@@ -22,6 +22,14 @@ interface Neo4JEdge<T extends EdgeType = EdgeType> {
   properties: T extends "TRADES" ? { year: number; value: number } : {};
 }
 
+interface Neo4JPath {
+  segments: {
+    start: Neo4JNode;
+    relationship: Neo4JEdge;
+    end: Neo4JNode;
+  }[];
+}
+
 export class DBClient {
   private driver: Driver;
 
@@ -78,17 +86,14 @@ export class DBClient {
     // language=cypher
     const neo4jBatchQuery = /*cypher*/ `
 MATCH (c { name: $centerNode })
-/* Subquery #1: get neighbors of c, plus edges from c -> neighbors */
 CALL {
   WITH c
   MATCH (c)-[r1]-(n)
   WHERE
-    /* If edgeTypes is provided, only keep those relationship types */
     (
       $edgeTypes IS NULL OR size($edgeTypes) = 0
       OR type(r1) IN $edgeTypes
     )
-    /* TRADE edges must be within year range */
     AND (
       type(r1) <> 'TRADES' OR (
         r1.year >= $minYear AND r1.year <= $maxYear AND r1.value >= $minTradeValue
@@ -97,14 +102,10 @@ CALL {
   RETURN collect(DISTINCT n) AS neighbors,
          collect(DISTINCT r1) AS edgesToNeighbors
 }
-
-/* Subquery #2: find edges among these neighbors */
 CALL {
   WITH neighbors
-  /* We do a 'self-join' of neighbors to find all edges among them */
   UNWIND neighbors AS a
   UNWIND neighbors AS b
-  /* Avoid a==b or duplicating same pair in reversed order */
   WITH a,b WHERE id(a) < id(b)
   MATCH (a)-[r2]-(b)
   WHERE
@@ -150,43 +151,93 @@ RETURN c, neighbors, edgesToNeighbors, edgesAmongNeighbors
   async getRelationsGraph(
     reporter1: string,
     reporter2: string,
-    { edgeTypes, minYear, maxYear, minTradeValue }: Filter = {},
+    { edgeTypes, minYear, maxYear, minTradeValue, getDirectTrades }: Filter & { getDirectTrades?: boolean } = {},
   ): Promise<DataGraph> {
     const session = this.driver.session();
 
     // language=cypher
     const neo4jBatchQuery = /*cypher*/ `
-MATCH (reporter1: Entity { name: $reporter1 }), (reporter2: Entity { name: $reporter2 })
+MATCH (e1:Entity {name: $name1}), (e2:Entity {name: $name2})
+WITH e1, e2,
+     $minTradeValue    AS minTradeValue,
+     $minYear          AS minYear,
+     $maxYear          AS maxYear,
+     $allowedNonTrades AS allowedNonTrades,
+     $getDirectTrades  AS getDirectTrades
 CALL {
-  WITH reporter1, reporter2
-  MATCH (reporter1)-[r1]-(n1: Entity)-[r2: TRADES]-(n2: Entity)-[r3]-(reporter2)
-    WHERE
-    type(r1) <> 'TRADES'
+  WITH e1, e2, minTradeValue, minYear, maxYear, allowedNonTrades, getDirectTrades
+  MATCH p = (e1)-[r:TRADES]-(e2)
+  WHERE getDirectTrades
+    AND r.value >= minTradeValue
+    AND r.year  >= minYear
+    AND r.year  <= maxYear
+  RETURN p
+
+  UNION
+
+  WITH e1, e2, minTradeValue, minYear, maxYear, allowedNonTrades
+  MATCH p = (e1)-[r1]-(m)-[r2]-(e2)
+  WHERE
+    (
+      type(r1) = 'TRADES'
+      AND r1.value >= minTradeValue
+      AND r1.year  >= minYear
+      AND r1.year  <= maxYear
+      AND type(r2) <> 'TRADES'
+      AND (
+        allowedNonTrades IS NULL
+        OR size(allowedNonTrades) = 0
+        OR type(r2) IN allowedNonTrades
+      )
+    )
+    OR
+    (
+      type(r2) = 'TRADES'
+      AND r2.value >= minTradeValue
+      AND r2.year  >= minYear
+      AND r2.year  <= maxYear
+      AND type(r1) <> 'TRADES'
+      AND (
+        allowedNonTrades IS NULL
+        OR size(allowedNonTrades) = 0
+        OR type(r1) IN allowedNonTrades
+      )
+    )
+  RETURN p
+
+  UNION
+
+  WITH e1, e2, minTradeValue, minYear, maxYear, allowedNonTrades
+  MATCH p = (e1)-[r1]-(n1)-[r2:TRADES]-(n2)-[r3]-(e2)
+  WHERE
+    r2.value >= minTradeValue
+    AND r2.year  >= minYear
+    AND r2.year  <= maxYear
+    AND type(r1) <> 'TRADES'
+    AND (
+      allowedNonTrades IS NULL
+      OR size(allowedNonTrades) = 0
+      OR type(r1) IN allowedNonTrades
+    )
     AND type(r3) <> 'TRADES'
     AND (
-      $edgeTypes IS NULL OR size($edgeTypes) = 0
-      OR (type(r1) IN $edgeTypes AND type(r3) IN $edgeTypes)
+      allowedNonTrades IS NULL
+      OR size(allowedNonTrades) = 0
+      OR type(r3) IN allowedNonTrades
     )
-    AND (
-      r2.year >= $minYear AND r2.year <= $maxYear AND r2.value >= $minTradeValue
-    )
-  RETURN collect(DISTINCT n1) AS n1,
-         collect(DISTINCT n2) AS n2,
-         collect(DISTINCT r1) AS edges1,
-         collect(DISTINCT r2) AS edges2,
-         collect(DISTINCT r3) AS edges3
+  RETURN p
 }
-
-RETURN reporter1, reporter2, n1, n2, edges1, edges2, edges3
+RETURN e1, e2, collect(p) AS paths;
     `;
 
     const result = await session.run(neo4jBatchQuery, {
-      reporter1,
-      reporter2,
-      edgeTypes: edgeTypes ? edgeTypes.filter((t) => EDGE_TYPES_SET.has(t)) : [],
+      name1: reporter1,
+      name2: reporter2,
+      allowedNonTrades: edgeTypes ? edgeTypes.filter((t) => EDGE_TYPES_SET.has(t)) : [],
       minYear: minYear ?? Number.MIN_SAFE_INTEGER,
       maxYear: maxYear ?? Number.MAX_SAFE_INTEGER,
       minTradeValue: minTradeValue ?? 0,
+      getDirectTrades,
     });
 
     await session.close();
@@ -197,13 +248,24 @@ RETURN reporter1, reporter2, n1, n2, edges1, edges2, edges3
     }
 
     const rec = result.records[0];
-    return this.neo4jDataToGraph(
-      ((rec.get("n1") || []) as Neo4JNode[])
-        .concat((rec.get("n2") || []) as Neo4JNode[])
-        .concat([rec.get("reporter1") as Neo4JNode, rec.get("reporter2") as Neo4JNode]),
-      ((rec.get("edges1") || []) as Neo4JEdge[])
-        .concat((rec.get("edges2") || []) as Neo4JEdge[])
-        .concat((rec.get("edges3") || []) as Neo4JEdge[]),
-    );
+    const e1: Neo4JNode = rec.get("e1");
+    const e2: Neo4JNode = rec.get("e2");
+    const paths: Neo4JPath[] = rec.get("paths");
+
+    const nodes: Record<string, Neo4JNode> = {
+      [e1.elementId]: e1,
+      [e2.elementId]: e2,
+    };
+    const edges: Record<string, Neo4JEdge> = {};
+
+    paths.forEach((path) => {
+      path.segments.forEach(({ start, end, relationship }) => {
+        nodes[start.elementId] = start;
+        nodes[end.elementId] = end;
+        edges[relationship.elementId] = relationship;
+      });
+    });
+
+    return this.neo4jDataToGraph(Object.values(nodes), Object.values(edges));
   }
 }

@@ -49,7 +49,7 @@ export function prepareGraph(
     if (fixedNodesSet.has(attributes.label)) fixedNodeIDs.push(id);
     sigmaGraph.addNode(id, {
       ...attributes,
-      size: largerNodesSet.has(attributes.label) ? 40 : 20,
+      size: largerNodesSet.has(attributes.label) ? 40 : 10,
       color: NODE_TYPES[attributes.dataType].color,
       x: 0,
       y: 0,

@@ -23,7 +23,10 @@ type Props = {
   maxYear?: string;
   edgeTypes?: string | string[];
   minTradeValue?: string;
-} & ({ mode: "ego"; center: string } | { mode: "relations"; reporter1: string; reporter2: string });
+} & (
+  | { mode: "ego"; center: string; includeCenter: string }
+  | { mode: "relations"; reporter1: string; reporter2: string; includeDirectTrades: string }
+);
 
 export class Network extends HTMLView<Props> {
   private db: DBClient = new DBClient();
@@ -185,7 +188,7 @@ export class Network extends HTMLView<Props> {
     this.toggleLoading(true);
     switch (mode) {
       case "ego": {
-        const center = this.props.center;
+        const { center, includeCenter } = this.props;
         largerNodes = [center];
         dataGraph = await this.db.getEgoNetwork(center, {
           minYear,
@@ -193,10 +196,14 @@ export class Network extends HTMLView<Props> {
           minTradeValue,
           edgeTypes: Array.isArray(edgeTypes) ? edgeTypes : edgeTypes ? [edgeTypes] : [],
         });
+        if (includeCenter !== "on" && includeCenter !== "true") {
+          const centerID = dataGraph.findNode((_, attributes) => attributes.label === center);
+          if (centerID) dataGraph.dropNode(centerID);
+        }
         break;
       }
       case "relations": {
-        const { reporter1, reporter2 } = this.props;
+        const { reporter1, reporter2, includeDirectTrades } = this.props;
         largerNodes = [reporter1, reporter2];
         fixedNodes = [reporter1, reporter2];
         dataGraph = await this.db.getRelationsGraph(reporter1, reporter2, {
@@ -204,6 +211,7 @@ export class Network extends HTMLView<Props> {
           maxYear,
           minTradeValue,
           edgeTypes: Array.isArray(edgeTypes) ? edgeTypes : edgeTypes ? [edgeTypes] : [],
+          getDirectTrades: includeDirectTrades === "on" || includeDirectTrades === "true",
         });
         break;
       }

@@ -76,6 +76,15 @@ export class RICardoHome extends HTMLView<Props> {
               <label for="center">Center entity</label>
               <input type="text" id="center" name="center" value="Belgium" />
             </section>
+            <section>
+              <input
+                type="checkbox"
+                id="include-center"
+                name="include-center"
+                checked
+              />
+              <label for="include-center">Include center entity</label>
+            </section>
           </fieldset>
 
           <fieldset>
@@ -85,11 +94,20 @@ export class RICardoHome extends HTMLView<Props> {
             </section>
             <section>
               <label for="reporter1">First entity</label>
-              <input type="text" id="reporter1" name="reporter1" value="Belgium" disabled />
+              <input type="text" id="reporter1" name="reporter1" value="India" disabled />
             </section>
             <section>
               <label for="reporter2">Second entity</label>
-              <input type="text" id="reporter2" name="reporter2" value="France" disabled />
+              <input type="text" id="reporter2" name="reporter2" value="United Kingdom" disabled />
+            </section>
+            <section>
+              <input
+                type="checkbox"
+                id="include-direct-trades"
+                name="include-direct-trades"
+                disabled
+              />
+              <label for="include-direct-trades">Include direct trades</label>
             </section>
           </fieldset>
         </div>
@@ -110,7 +128,7 @@ export class RICardoHome extends HTMLView<Props> {
             step="1"
             min="1833"
             max="1938"
-            value="1850"
+            value="1833"
           />
           and
           <input
@@ -119,7 +137,7 @@ export class RICardoHome extends HTMLView<Props> {
             step="1"
             min="1833"
             max="1938"
-            value="1900"
+            value="1938"
           />
         </section>
 
@@ -174,6 +192,8 @@ export class RICardoHome extends HTMLView<Props> {
       openView("/network", {
         mode: formData.get("mode") as string,
         center: formData.get("center") as string,
+        includeCenter: formData.get("include-center") as string,
+        includeDirectTrades: formData.get("include-direct-trades") as string,
         reporter1: formData.get("reporter1") as string,
         reporter2: formData.get("reporter2") as string,
         minYear: formData.get("minYear") as string,
