@@ -1,45 +1,36 @@
 import { getDatasetLocalPath, indexCsvAsNodes } from "./utils.ts";
 
 export async function extractEntities() {
-  console.log("Index all GPH entities (gph_entities.csv)");
+  console.log("Index all entities from GeoPolHist (gph_entities.csv)");
   await indexCsvAsNodes({
     csvPath: getDatasetLocalPath("gph_entities"),
     neo4jBatchQuery: `
 UNWIND $batch AS row
-MERGE (n:GPHEntity { id: row.GPH_code })
-MERGE (t:Continent { id: row.continent })
+MERGE (n:Entity { name: row.GPH_name })
+MERGE (t:Continent { name: row.continent })
 MERGE (n)-[:IS_IN_CONTINENT]->(t)
-SET n.name = row.GPH_name
+SET n.gphID = row.GPH_code
 `,
   });
 
-  console.log("Index all RIC entities (ric_entities.csv)");
+  console.log("Index all entities from RICardo (ric_entities.csv)");
   await indexCsvAsNodes({
     csvPath: getDatasetLocalPath("ric_entities"),
     neo4jBatchQuery: `
 UNWIND $batch AS row
-MERGE (n:RICEntity { id: row.RICname })
-MERGE (t0:Continent { id: row.continent })
-MERGE (n)-[:IS_IN_CONTINENT]->(t0)
-FOREACH (
-  _ IN CASE 
-      WHEN row.GPH_code IS NOT NULL AND row.GPH_code <> '' 
-      THEN [1] 
-      ELSE [] 
-    END |
-  MERGE (t1:GPHEntity { id: row.GPH_code })
-  MERGE (n)-[:IS_EQUIVALENT_TO]->(t1)
-)
+MERGE (n:Entity { name: row.RICname })
+MERGE (t1:Continent { name: row.continent })
+MERGE (n)-[:IS_IN_CONTINENT]->(t1)
 FOREACH (
   _ IN CASE 
       WHEN row.parent_entity IS NOT NULL AND row.parent_entity <> '' 
       THEN [1] 
       ELSE [] 
     END |
-  MERGE (t2:RICEntity { id: row.parent_entity })
+  MERGE (t2:Entity { name: row.parent_entity })
   MERGE (n)-[:IS_CHILD_OF]->(t2)
 )
-SET n.name = row.RICname, n.ricType = row.RICType
+SET n.ricType = row.RICType
 `,
   });
 
@@ -48,8 +39,8 @@ SET n.name = row.RICname, n.ricType = row.RICType
     csvPath: getDatasetLocalPath("gph_geoAreas"),
     neo4jBatchQuery: `
 UNWIND $batch AS row
-MERGE (gph:GPHEntity { id: row.GPH_code })
-MERGE (ric:RICEntity { id: row.RICname })
+MERGE (gph:Entity { name: row.GPH_name })
+MERGE (ric:Entity { name: row.RICname })
 FOREACH (
   _ IN CASE 
       WHEN row.RICname IS NOT NULL AND row.RICname <> '' 
@@ -66,8 +57,8 @@ FOREACH (
     csvPath: getDatasetLocalPath("ric_colonialToGeoAreas"),
     neo4jBatchQuery: `
 UNWIND $batch AS row
-MERGE (entity:RICEntity { id: row.RICname })
-MERGE (area:RICEntity { id: row.geographical_area })
+MERGE (entity:Entity { name: row.RICname })
+MERGE (area:Entity { name: row.geographical_area })
 FOREACH (
   _ IN CASE 
       WHEN row.continental IS NOT NULL AND row.continental <> 'yes' 

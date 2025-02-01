@@ -16,8 +16,8 @@ export async function extractTrades() {
     },
     neo4jBatchQuery: `
 UNWIND $batch AS row
-MATCH (source:RICEntity { id: row.source })
-MATCH (target:RICEntity { id: row.target })
+MATCH (source:Entity { name: row.source })
+MATCH (target:Entity { name: row.target })
 MERGE (source)-[e:TRADES { year: row.year }]->(target)
 SET e.value = row.total
 WITH e, row.key as key, row.total as total

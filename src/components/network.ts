@@ -21,7 +21,6 @@ import { HTMLView } from "./html-view.ts";
 type Props = {
   minYear?: string;
   maxYear?: string;
-  nodeTypes?: string | string[];
   edgeTypes?: string | string[];
   minTradeValue?: string;
 } & ({ mode: "ego"; center: string } | { mode: "relations"; reporter1: string; reporter2: string });
@@ -33,14 +32,7 @@ export class Network extends HTMLView<Props> {
   constructor(props: Props) {
     super(props);
 
-    const { nodeTypes, edgeTypes } = this.props;
-    const filteredNodeTypes = (
-      Array.isArray(nodeTypes) && nodeTypes.length
-        ? nodeTypes
-        : typeof nodeTypes === "string"
-          ? [nodeTypes]
-          : Object.keys(NODE_TYPES)
-    ) as NodeType[];
+    const { edgeTypes } = this.props;
     const filteredEdgeTypes = (
       Array.isArray(edgeTypes) && edgeTypes.length
         ? edgeTypes
@@ -94,12 +86,12 @@ export class Network extends HTMLView<Props> {
           <legend><strong>How to read the graph</strong></legend>
           
           <div>Nodes</div>
-          ${filteredNodeTypes
+          ${Object.keys(NODE_TYPES)
             .map(
               (nodeType) => `
           <div>
             <small>
-              <span class="circle" style="background:${NODE_TYPES[nodeType].color};"></span> ${NODE_TYPES[nodeType].label}
+              <span class="circle" style="background:${NODE_TYPES[nodeType as NodeType].color};"></span> ${NODE_TYPES[nodeType as NodeType].label}
             </small>
           </div>
           `,
@@ -182,14 +174,7 @@ export class Network extends HTMLView<Props> {
    * ************
    */
   private async reloadGraph() {
-    const {
-      mode,
-      minYear: rawMinYear,
-      maxYear: rawMaxYear,
-      minTradeValue: rawMinTradeValue,
-      nodeTypes,
-      edgeTypes,
-    } = this.props;
+    const { mode, minYear: rawMinYear, maxYear: rawMaxYear, minTradeValue: rawMinTradeValue, edgeTypes } = this.props;
     const minYear = rawMinYear ? parseInt(rawMinYear) : undefined;
     const maxYear = rawMaxYear ? parseInt(rawMaxYear) : undefined;
     const minTradeValue = rawMinTradeValue ? parseInt(rawMinTradeValue) : undefined;
@@ -206,7 +191,6 @@ export class Network extends HTMLView<Props> {
           minYear,
           maxYear,
           minTradeValue,
-          nodeTypes: Array.isArray(nodeTypes) ? nodeTypes : nodeTypes ? [nodeTypes] : [],
           edgeTypes: Array.isArray(edgeTypes) ? edgeTypes : edgeTypes ? [edgeTypes] : [],
         });
         break;
@@ -219,7 +203,6 @@ export class Network extends HTMLView<Props> {
           minYear,
           maxYear,
           minTradeValue,
-          nodeTypes: Array.isArray(nodeTypes) ? nodeTypes : nodeTypes ? [nodeTypes] : [],
           edgeTypes: Array.isArray(edgeTypes) ? edgeTypes : edgeTypes ? [edgeTypes] : [],
         });
         break;

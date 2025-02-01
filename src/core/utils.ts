@@ -46,16 +46,10 @@ export function prepareGraph(
   const fixedNodeIDs: string[] = [];
 
   graph.forEachNode((id, attributes) => {
-    let larger = false;
-    if (fixedNodesSet.has(attributes.label) && attributes.dataType === "GPHEntity") {
-      fixedNodeIDs.push(id);
-      larger = true;
-    } else if (!fixedNodes?.length && largerNodesSet.has(attributes.id)) {
-      larger = true;
-    }
+    if (fixedNodesSet.has(attributes.label)) fixedNodeIDs.push(id);
     sigmaGraph.addNode(id, {
       ...attributes,
-      size: larger ? 40 : 20,
+      size: largerNodesSet.has(attributes.label) ? 40 : 20,
       color: NODE_TYPES[attributes.dataType].color,
       x: 0,
       y: 0,

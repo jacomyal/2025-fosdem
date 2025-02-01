@@ -2,13 +2,9 @@ import { MultiGraph } from "graphology";
 import { EdgeDisplayData, NodeDisplayData, PartialButFor } from "sigma/types";
 
 export const NODE_TYPES = {
-  RICEntity: {
-    label: "Entity (RICardo)",
+  Entity: {
+    label: "Entity",
     color: "#5B0EED",
-  },
-  GPHEntity: {
-    label: "Entity (GeoPolHist)",
-    color: "#ED0E67",
   },
   Continent: {
     label: "Continent",
@@ -57,7 +53,6 @@ export interface Filter {
   minYear?: number;
   maxYear?: number;
   minTradeValue?: number;
-  nodeTypes?: string[];
   edgeTypes?: string[];
 }
 

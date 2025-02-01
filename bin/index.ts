@@ -8,6 +8,13 @@ async function main() {
   await fetchDatasets();
   await extractEntities();
   await extractTrades();
+
+  // Add constraint to index Entity names:
+  await runQuery(`
+    CREATE CONSTRAINT entity_name IF NOT EXISTS
+    FOR (e:Entity)
+    REQUIRE e.name IS UNIQUE;
+  `);
   console.log("All good!");
 }
 

@@ -1,7 +1,7 @@
 import { map } from "lodash-es";
 
 import { openView } from "../core/routing.ts";
-import { EDGE_TYPES, NODE_TYPES } from "../core/types.ts";
+import { EDGE_TYPES } from "../core/types.ts";
 import { HTMLView } from "./html-view.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -46,9 +46,12 @@ export class RICardoHome extends HTMLView<Props> {
         <p>
           This application is a small demo to showcase how to use
           <a href="https://sigmajs.org/">sigma</a> to explore graph databases.
+          It has been developed to illustrate my presentation at
+          <a href="https://fosdem.org/2025/">FOSDEM 2025</a>
+          <a href="https://fosdem.org/2025/schedule/track/analytics/">Data Analytics Devroom</a>, <a href="https://fosdem.org/2025/schedule/event/fosdem-2025-5614-developing-custom-uis-to-explore-graph-databases-using-sigma-js/"><i>Developing Custom UIs to Explore Graph Databases Using Sigma.js</i></a>.
         </p>
         <p>
-          This demo explores the datasets from
+          It explores the datasets from
           <a href="https://ricardo.medialab.sciences-po.fr/#!/">RICardo</a>,
           a project dedicated to trade between nations over a period spanning
           the beginning of the Industrial Revolution to the eve of the Second
@@ -67,10 +70,10 @@ export class RICardoHome extends HTMLView<Props> {
           <fieldset>
             <section>
               <input type="radio" id="mode-ego" name="mode" value="ego" checked />
-              <label for="mode-ego"><strong>Explore reported partners of a RIC entity</strong></label>
+              <label for="mode-ego"><strong>Explore reported partners of a entity</strong></label>
             </section>
             <section>
-              <label for="center">Center RIC entity</label>
+              <label for="center">Center entity</label>
               <input type="text" id="center" name="center" value="Belgium" />
             </section>
           </fieldset>
@@ -78,15 +81,15 @@ export class RICardoHome extends HTMLView<Props> {
           <fieldset>
             <section>
               <input type="radio" id="mode-relations" name="mode" value="relations" />
-              <label for="mode-relations"><strong>Explore trades between two GPH entity</strong></label>
+              <label for="mode-relations"><strong>Explore trades between two entities</strong></label>
             </section>
             <section>
-              <label for="reporter1">First RIC entity</label>
-              <input type="text" id="reporter1" name="reporter1" value="France" disabled />
+              <label for="reporter1">First entity</label>
+              <input type="text" id="reporter1" name="reporter1" value="Belgium" disabled />
             </section>
             <section>
-              <label for="reporter2">Second RIC entity</label>
-              <input type="text" id="reporter2" name="reporter2" value="Algeria (Regency of Algiers)" disabled />
+              <label for="reporter2">Second entity</label>
+              <input type="text" id="reporter2" name="reporter2" value="France" disabled />
             </section>
           </fieldset>
         </div>
@@ -121,26 +124,7 @@ export class RICardoHome extends HTMLView<Props> {
         </section>
 
         <section>
-          <label>Node types</label>
-          ${map(
-            NODE_TYPES,
-            ({ label }, type) => `
-          <div>
-            <input
-              type="checkbox"
-              id="nodeType-${type}"
-              value="${type}"
-              name="nodeTypes"
-              checked
-            />
-            <label for="nodeType-${type}">${label}</label>
-          </div>
-          `,
-          ).join("")}
-        </section>
-
-        <section>
-          <label>Edge types</label>
+          <label>Relations types</label>
           ${map(
             EDGE_TYPES,
             ({ label }, type) => `
@@ -172,13 +156,12 @@ export class RICardoHome extends HTMLView<Props> {
       
       <br>
       
-      <section class="text-end">
+      <section class="text-center">
         <button type="submit">Generate network</button>
       </section>
     </form>
   </div>
 </main>
-    
 `;
   }
 
@@ -195,7 +178,6 @@ export class RICardoHome extends HTMLView<Props> {
         reporter2: formData.get("reporter2") as string,
         minYear: formData.get("minYear") as string,
         maxYear: formData.get("maxYear") as string,
-        nodeTypes: formData.getAll("nodeTypes") as string[],
         edgeTypes: formData.getAll("edgeTypes") as string[],
         minTradeValue: formData.get("minTradeValue") as string,
       });
