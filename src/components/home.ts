@@ -1,7 +1,5 @@
-import { map } from "lodash-es";
-
 import { openView } from "../core/routing.ts";
-import { EDGE_TYPES } from "../core/types.ts";
+import { EDGE_TYPES, EdgeType } from "../core/types.ts";
 import { HTMLView } from "./html-view.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -143,9 +141,9 @@ export class RICardoHome extends HTMLView<Props> {
 
         <section>
           <label>Relations types</label>
-          ${map(
-            EDGE_TYPES,
-            ({ label }, type) => `
+          ${Object.keys(EDGE_TYPES)
+            .map(
+              (type) => `
           <div>
             <input
               type="checkbox"
@@ -154,10 +152,11 @@ export class RICardoHome extends HTMLView<Props> {
               name="edgeTypes"
               checked
             />
-            <label for="edgeType-${type}">${label}</label>
+            <label for="edgeType-${type}">${EDGE_TYPES[type as EdgeType].label}</label>
           </div>
           `,
-          ).join("")}
+            )
+            .join("")}
         </section>
 
         <section>

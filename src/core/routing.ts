@@ -1,5 +1,3 @@
-import { map } from "lodash-es";
-
 import { RICardoHome } from "../components/home.ts";
 import { HTMLViewType } from "../components/html-view.ts";
 import { Network } from "../components/network.ts";
@@ -26,11 +24,14 @@ function readURLSearchParams(params: URLSearchParams): BaseProps {
 }
 
 function writeURLSearchParams(props: BaseProps): string {
-  return map(props, (value, key) =>
-    Array.isArray(value)
-      ? value.map((v) => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`).join("&")
-      : `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
-  ).join("&");
+  return Object.keys(props)
+    .map((key) => {
+      const value = props[key];
+      return Array.isArray(value)
+        ? value.map((v) => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`).join("&")
+        : `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+    })
+    .join("&");
 }
 
 function readLocation() {
