@@ -28,6 +28,8 @@ type Props = {
   | { mode: "relations"; reporter1: string; reporter2: string; includeDirectTrades: string }
 );
 
+const HIDDEN_COLOR = "#f6f6f6";
+
 function getYearsCaption(min?: number, max?: number): string {
   if (typeof min === "number" && typeof max === "number") {
     return ` between ${min} and ${max}`;
@@ -143,8 +145,8 @@ export class Network extends HTMLView<Props> {
     `;
 
     this.sigma = new Sigma<SigmaNode, SigmaEdge>(new MultiGraph() as SigmaGraph, this.getSigmaRoot(), {
-      // renderEdgeLabels: true,
       zIndex: true,
+      renderEdgeLabels: true,
       defaultEdgeType: "straight",
       allowInvalidContainer: true,
       labelFont: "monospace",
@@ -169,6 +171,13 @@ export class Network extends HTMLView<Props> {
     });
     this.querySelector("button#zoom-reset")?.addEventListener("click", () => {
       this.sigma.getCamera().animatedReset();
+    });
+
+    this.sigma.on("enterNode", ({ node }) => {
+      this.refreshReducers(node);
+    });
+    this.sigma.on("leaveNode", () => {
+      this.refreshReducers();
     });
   }
 
@@ -199,6 +208,8 @@ export class Network extends HTMLView<Props> {
    * ************
    */
   private async reloadGraph() {
+    this.refreshReducers();
+
     const { mode, minYear: rawMinYear, maxYear: rawMaxYear, minTradeValue: rawMinTradeValue, edgeTypes } = this.props;
     const minYear = rawMinYear ? parseInt(rawMinYear) : undefined;
     const maxYear = rawMaxYear ? parseInt(rawMaxYear) : undefined;
@@ -250,6 +261,26 @@ export class Network extends HTMLView<Props> {
     this.sigma.refresh();
 
     this.toggleLoading(false);
+  }
+  private refreshReducers(highlightedNode?: string | null) {
+    const graph = this.sigma.getGraph();
+    this.sigma.setSettings({
+      nodeReducer: highlightedNode
+        ? (node, data) => {
+            if (node !== highlightedNode && !graph.areNeighbors(node, highlightedNode)) {
+              return { ...data, color: HIDDEN_COLOR, label: null, zIndex: -1 };
+            }
+
+            return data;
+          }
+        : null,
+      edgeReducer: highlightedNode
+        ? (edge, data) => {
+            if (!graph.hasExtremity(edge, highlightedNode)) return { ...data, color: HIDDEN_COLOR, zIndex: -1 };
+            else return { ...data, label: data.rawLabel };
+          }
+        : null,
+    });
   }
 }
 

@@ -70,7 +70,7 @@ export function prepareGraph(
       size: attributes.dataType === "TRADES" ? (attributes.value / tradeMax) * 40 : 1,
       color: EDGE_TYPES[attributes.dataType].color,
       zIndex: EDGE_TYPES[attributes.dataType].zIndex,
-      label:
+      rawLabel:
         attributes.dataType === "TRADES"
           ? attributes.value.toLocaleString("en-US", { style: "currency", currency: "USD" })
           : EDGE_TYPES[attributes.dataType].label,

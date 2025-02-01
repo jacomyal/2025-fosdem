@@ -68,6 +68,7 @@ export type SigmaEdge = DataEdge &
     parallelIndex?: number;
     parallelMinIndex?: number;
     parallelMaxIndex?: number;
+    rawLabel?: string;
   };
 export type SigmaGraph = MultiGraph<SigmaNode, SigmaEdge>;
 
