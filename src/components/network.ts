@@ -28,7 +28,7 @@ type Props = {
   | { mode: "relations"; reporter1: string; reporter2: string; includeDirectTrades: string }
 );
 
-const HIDDEN_COLOR = "#f6f6f6";
+const HIDDEN_COLOR = "#eee";
 
 function getYearsCaption(min?: number, max?: number): string {
   if (typeof min === "number" && typeof max === "number") {
@@ -276,7 +276,7 @@ export class Network extends HTMLView<Props> {
         : null,
       edgeReducer: highlightedNode
         ? (edge, data) => {
-            if (!graph.hasExtremity(edge, highlightedNode)) return { ...data, color: HIDDEN_COLOR, zIndex: -1 };
+            if (!graph.hasExtremity(edge, highlightedNode)) return { ...data, hidden: true };
             else return { ...data, label: data.rawLabel };
           }
         : null,
